@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html>
+<head>
+    <!--
+    Customize this policy to fit your own app's needs. For more guidance, see:
+        https://github.com/apache/cordova-plugin-whitelist/blob/master/README.md#content-security-policy
+    Some notes:
+        * gap: is required only on iOS (when using UIWebView) and is needed for JS->native communication
+        * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly
+        * Disables use of inline scripts in order to mitigate risk of XSS vulnerabilities. To change this:
+            * Enable inline JS: add 'unsafe-inline' to default-src
+    -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="viewport"
+          content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+    <title>Hello World</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+    <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+    <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+
+    <script src="js/jquery-3.2.1.min.js"></script>
+</head>
+<body style="height: 100vh;">
+<div>
+    <p id="counter">0.00</p>
+</div>
+<div>
+    <ons-button id="toggle-button">Start/Stop</ons-button>
+    <ons-button id="reset-button">Reset</ons-button>
+    <ons-button id="lap-button">Lap</ons-button>
+</div>
+
+<div style="overflow-y: scroll; height: 200px;">
+    <ol id="rap-list">
+
+    </ol>
+</div>
+<script type="text/javascript" src="cordova.js"></script>
+<script>
+    (function () {
+        //polyfill requestAnimationFrame prefixes
+        window.requestAnimationFrame = window.msRequestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.requestAnimationFrame;
+        window.cancelAnimationFrame = window.mscancelAnimationFrame || window.webkitcancelAnimationFrame || window.mozcancelAnimationFrame || window.cancelAnimationFrame;
+    })();
+
+    //document onready
+    $(function () {
+
+        (function () {
+            //ui initializing
+            $('#lap-button').hide();
+            $('#reset-button').show();
+        })();
+
+
+        /** タームの開始時刻 */
+        var startTime;
+        /** 最後にストップしたタイミングでの経過時間合計 */
+        var tempTime = 0;
+        /** タイマーが動作しているかどうか。falseならループ抜ける */
+        var isActive = false;
+
+        /** 現在の経過時間 */
+        var currentTime = (function () {
+            return tempTime + (new Date().getTime() - startTime);
+        });
+
+        /** UIループ */
+        var loop = (function () {
+            var time = currentTime();
+            if (isActive) {
+
+                $("#counter").text(time / 1000);
+
+                window.requestAnimationFrame(loop)
+            } else {
+                //ループ抜けるときは現在の経過時間をtempに入れる
+                tempTime = time;
+            }
+        });
+
+        /** スタート処理 */
+        var start = (function () {
+            isActive = true;
+            startTime = new Date().getTime();
+            loop();
+            $('#lap-button').show();
+            $('#reset-button').hide();
+        });
+
+        /** ストップ処理 */
+        var stop = (function () {
+            isActive = false;
+            $('#lap-button').hide();
+            $('#reset-button').show();
+        });
+
+        /** リセットする場合 */
+        var reset = (function () {
+            tempTime = 0;
+            if (isActive) {
+                stop();
+            }
+            $("#counter").text("0.00");
+            $("#lap-list").empty();
+        });
+
+        /** ラップ */
+        var lap = (function () {
+            var time = currentTime();
+
+            $("#lap-list").append($("<li>" + (time / 1000) + "</li>"));
+        });
+
+        //click handler
+        $('#toggle-button').on('click', function (e) {
+            if (isActive) {
+                stop();
+            } else {
+                start();
+            }
+        });
+
+        $('#reset-button').click(reset);
+        $('#lap-button').click(lap);
+    });
+</script>
+</body>
+</html>
